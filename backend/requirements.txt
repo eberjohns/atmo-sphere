@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pydantic
+httpx
+xarray
+netcdf4
+numpy
+python-dotenv
+requests

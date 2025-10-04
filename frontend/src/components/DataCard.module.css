@@ -1,0 +1,40 @@
+.card {
+    background-color: var(--bg-medium);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-left: 4px solid var(--border-light);
+}
+
+.cardGreen {
+    border-left-color: var(--green);
+}
+
+.cardRed {
+    border-left-color: var(--red);
+}
+
+.icon {
+    height: 1.5rem;
+    width: 1.5rem;
+}
+
+.title {
+    font-size: 0.875rem;
+    color: var(--text-medium);
+}
+
+.value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-light);
+}
+
+.unit {
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--text-medium);
+    margin-left: 0.25rem;
+}
