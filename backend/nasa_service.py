@@ -119,6 +119,39 @@ async def get_climatological_analysis(lat: float, lon: float, month: int, day: i
         overall_score = round((weighted_score / total_weight) * 100) if total_weight > 0 else 0
 
         # --- 7. Construct the Final Rich JSON Response ---
+        # Determine final verdict for a single point (all primary metrics meet profile?)
+        def sample_meets_point(atm):
+            t = atm.get('temperature', {}).get('meets_profile')
+            w = atm.get('wind', {}).get('meets_profile')
+            p = atm.get('precipitation', {}).get('meets_profile')
+            h = atm.get('humidity', {}).get('meets_profile')
+            return bool(t and w and p and h)
+
+        percent_meet_profile = 100 if sample_meets_point({
+            'temperature': {'meets_profile': temp_in_comfort},
+            'wind': {'meets_profile': wind_in_comfort},
+            'precipitation': {'meets_profile': rain_in_comfort},
+            'humidity': {'meets_profile': humidity_in_comfort}
+        }) else 0
+
+        # Include per-sample (single point) details for frontend consistency
+        samples_info = [{
+            'lat': lat,
+            'lon': lon,
+            'overall_score': overall_score,
+            'atmospheric_signature': {
+                'temperature': {'avg': round(temp_avg, 1), 'meets_profile': temp_in_comfort},
+                'wind': {'avg': round(wind_avg, 1), 'meets_profile': wind_in_comfort},
+                'humidity': {'avg': round(humidity_avg, 1), 'meets_profile': humidity_in_comfort},
+                'precipitation': {'estimated_daily_chance': round(rain_probability, 1), 'meets_profile': rain_in_comfort},
+            },
+            'specialty_scores': {
+                'uncomfortable_heat_chance': round(max(0, uncomfortable_chance)),
+                'golden_hour_quality': golden_hour_score,
+                'outdoor_activity_index': round((overall_score + sunny_day_likelihood) / 2)
+            }
+        }]
+
         return {
             "overall_score": overall_score,
             "location": data.get("header", {}).get("title", "Unknown Location"),
@@ -151,6 +184,12 @@ async def get_climatological_analysis(lat: float, lon: float, month: int, day: i
                 # A simple blend of the main score and the likelihood of sun
                 "outdoor_activity_index": round((overall_score + sunny_day_likelihood) / 2)
             }
+            ,
+            "final_verdict": {
+                "percent_meet_profile": percent_meet_profile,
+                "samples_evaluated": 1
+            },
+            "samples": samples_info
         }
 
     except Exception as e:
