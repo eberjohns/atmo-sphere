@@ -7,7 +7,7 @@ Planning outdoor activities, vacations, or events months in advance comes with a
 ## Our Solution
 **AtmoSphere** is a web application that transforms how we plan for the future by providing a personalized climate analysis for any location on Earth, powered by over 40 years of NASA's historical Earth-observation data.
 
-Instead of a generic weather forecast, Solas delivers a personalized **"Comfort Score"**. Users can define their ideal conditions for temperature, wind, humidity, and rain, and even weight which factors are most important to them. Using our interactive map, users can select a specific point or an entire region—like a hiking trail or a national park—and instantly receive a detailed "Atmospheric Signature" that shows the historical likelihood of that location matching their personal comfort profile for any day of the year.
+Instead of a generic weather forecast, AtmoSphere delivers a personalized **"Comfort Score"**. Users can define their ideal conditions for temperature, wind, humidity, and rain, and even weight which factors are most important to them. Using our interactive map, users can select a specific point or an entire region—like a hiking trail or a national park—and instantly receive a detailed "Atmospheric Signature" that shows the historical likelihood of that location matching their personal comfort profile for any day of the year.
 
 ### Key Features
 - Personalized Comfort Profile: Users can define and save their ideal weather conditions.
