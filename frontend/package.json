@@ -10,8 +10,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "leaflet": "^1.9.4",
+    "leaflet-draw": "^1.0.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-leaflet": "^4.2.1"
+  },
+  "optionalDependencies": {
+    "leaflet-control-geocoder": "^1.13.0",
+    "leaflet.heat": "^0.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

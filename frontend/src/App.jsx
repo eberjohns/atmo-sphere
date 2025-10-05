@@ -3,6 +3,7 @@ import { fetchAnalysis } from './api.js';
 import SearchForm from './components/SearchForm.jsx';
 import ResultsDisplay from './components/ResultsDisplay.jsx';
 import ProfileModal from './components/ProfileModal.jsx';
+import MapPicker from './components/MapPicker.jsx';
 
 export default function App() {
   const [searchParams, setSearchParams] = useState({
@@ -23,6 +24,7 @@ export default function App() {
   });
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMapOpen, setIsMapOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [results, setResults] = useState(null);
@@ -39,6 +41,26 @@ export default function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePolygonSave = (geojson) => {
+    if (!geojson) {
+      setSearchParams({ ...searchParams, polygon: null });
+      return;
+    }
+
+    // Extract coordinates and compute centroid fallback
+    const coords = geojson.geometry.coordinates;
+    // For polygons: coords[0] is the outer ring
+    const ring = Array.isArray(coords[0]) ? coords[0] : coords;
+  // ring is an array of [lon, lat] points
+  const lats = ring.map((pt) => pt[1]);
+  const lons = ring.map((pt) => pt[0]);
+  const centroidLat = lats.reduce((a, b) => a + b, 0) / lats.length;
+  const centroidLon = lons.reduce((a, b) => a + b, 0) / lons.length;
+
+    setSearchParams({ ...searchParams, polygon: geojson, lat: centroidLat.toFixed(6), lon: centroidLon.toFixed(6) });
+    setIsMapOpen(false);
   };
 
   const handleReset = () => {
@@ -84,14 +106,23 @@ export default function App() {
               searchParams={searchParams}
               setSearchParams={setSearchParams}
               isLoading={loading}
+              onOpenMap={() => setIsMapOpen(true)}
             />
           )}
 
           {!loading && !error && results && (
-            <ResultsDisplay results={results} onReset={handleReset} />
+            <ResultsDisplay results={results} onReset={handleReset} polygon={searchParams.polygon} />
           )}
         </main>
       </div>
+
+      {isMapOpen && (
+        <MapPicker
+          initialCenter={[parseFloat(searchParams.lat) || 20, parseFloat(searchParams.lon) || 0]}
+          onSave={handlePolygonSave}
+          onClose={() => setIsMapOpen(false)}
+        />
+      )}
 
       <ProfileModal 
         isOpen={isProfileOpen} 
@@ -102,8 +133,9 @@ export default function App() {
         setWeights={setWeights}
       />
 
-      <footer className="footer">
+      <footer className="footer" style={{ textAlign: 'center' }}>
         <p>A NASA Space Apps Challenge Project. All climatological data provided by the NASA POWER Project.</p>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text-medium)', marginTop: '0.25rem' }}>NASA/POWER Source Native Resolution Climatology Climatologies</p>
       </footer>
     </div>
   );

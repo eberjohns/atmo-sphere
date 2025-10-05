@@ -1,0 +1,13 @@
+.toggleRow { display:flex; gap:8px; margin-bottom:8px; }
+.toggleBtn { padding:6px 12px; border-radius:6px; background: rgba(255,255,255,0.03); color:var(--text-light); border:1px solid rgba(255,255,255,0.04); cursor:pointer; font-weight:700; }
+.toggleBtn:hover { background: rgba(255,255,255,0.04); }
+.toggleBtn.active, .toggleBtn:focus, .toggleBtn:active { background: linear-gradient(90deg, rgba(6,182,212,0.12), rgba(14,165,233,0.06)); border-color: var(--accent); }
+
+.mapWrapper { position: relative; width: 100%; }
+.mapInner { position: relative; }
+
+.rainOverlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 8px; }
+.rainOverlay::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 8px 16px; opacity: 0.6; mix-blend-mode: screen; }
+/* subtle falling raindrops using CSS animation */
+.rainOverlay::after { content: ''; position:absolute; left:50%; top:-10%; width:2px; height:120%; background-image: linear-gradient(to bottom, rgba(255,255,255,0.12), rgba(255,255,255,0.02)); transform: translateX(-50%); animation: fall 1.6s linear infinite; opacity:0.35 }
+@keyframes fall { to { transform: translateX(-50%) translateY(100%); } }

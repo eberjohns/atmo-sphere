@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
 const ScoreGauge = ({ value }) => {
-  const size = 180;
-  const strokeWidth = 15;
+  const size = 230;
+  const strokeWidth = 18;
   const center = size / 2;
   const radius = center - strokeWidth;
   const circumference = 2 * Math.PI * radius;
@@ -46,8 +46,8 @@ const ScoreGauge = ({ value }) => {
         />
       </svg>
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontSize: '2rem', fontWeight: 800, color: '#fff' }}>{Math.round(value)}</span>
-        <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>SCORE</span>
+        <span style={{ fontSize: '2.6rem', fontWeight: 800, color: '#fff' }}>{Math.round(value)}</span>
+        <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>SCORE</span>
       </div>
     </div>
   );

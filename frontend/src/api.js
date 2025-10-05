@@ -1,5 +1,6 @@
 // The URL where your FastAPI backend is running.
-const API_URL = "http://127.0.0.1:8000/api/analyze/point";
+const POINT_API_URL = "http://127.0.0.1:8000/api/analyze/point";
+const POLYGON_API_URL = "http://127.0.0.1:8000/api/analyze/polygon";
 
 /**
  * Fetches the analysis from the backend API.
@@ -9,16 +10,35 @@ const API_URL = "http://127.0.0.1:8000/api/analyze/point";
  * @returns {Promise<object>} - The analysis result from the API.
  */
 export const fetchAnalysis = async (searchParams, profile, weights) => {
+  const month = parseInt(searchParams.month);
+  const day = parseInt(searchParams.day);
+
+  // If a polygon (GeoJSON) is provided, post to polygon endpoint
+  if (searchParams.polygon) {
+    const response = await fetch(POLYGON_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ polygon: searchParams.polygon, month, day, profile, weights, sample_count: searchParams.sample_count || 9 }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
   const requestBody = {
     lat: parseFloat(searchParams.lat),
     lon: parseFloat(searchParams.lon),
-    month: parseInt(searchParams.month),
-    day: parseInt(searchParams.day),
+    month,
+    day,
     profile,
     weights,
   };
 
-  const response = await fetch(API_URL, {
+  const response = await fetch(POINT_API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(requestBody),

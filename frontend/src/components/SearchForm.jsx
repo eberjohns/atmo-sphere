@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from './SearchForm.module.css';
 
-const SearchForm = ({ onSearch, onProfileOpen, searchParams, setSearchParams, isLoading }) => {
+const SearchForm = ({ onSearch, onProfileOpen, searchParams, setSearchParams, isLoading, onOpenMap }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         onSearch();
@@ -62,6 +62,9 @@ const SearchForm = ({ onSearch, onProfileOpen, searchParams, setSearchParams, is
             <div className={styles.buttonGroup}>
                 <button type="button" onClick={onProfileOpen} className={`${styles.btn} ${styles.btnSecondary}`} disabled={isLoading}>
                     Set Comfort Profile
+                </button>
+                <button type="button" onClick={onOpenMap} className={`${styles.btn} ${styles.btnSecondary}`} disabled={isLoading}>
+                    Pick Area on Map
                 </button>
                 <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={isLoading}>
                     {isLoading ? 'Analyzing...' : 'Analyze Conditions'}
