@@ -2,13 +2,20 @@ import React, { useState } from 'react';
 import styles from './ProfileModal.module.css';
 import { fetchProfileFromDate } from '../api.js';
 
-const ProfileModal = ({ isOpen, onClose, profile, setProfile, weights, setWeights, searchParams }) => {
-    const [lat, setLat] = useState(searchParams?.lat || '');
-    const [lon, setLon] = useState(searchParams?.lon || '');
-    const [month, setMonth] = useState(new Date().getMonth() + 1);
-    const [day, setDay] = useState(new Date().getDate());
+const ProfileModal = ({ isOpen, onClose, profile, setProfile, weights, setWeights, searchParams, setSearchParams }) => {
+    // Location search state
+    const [locationQuery, setLocationQuery] = useState('');
+    const [resolvedLat, setResolvedLat] = useState(searchParams?.lat || '');
+    const [resolvedLon, setResolvedLon] = useState(searchParams?.lon || '');
+
+    // Date input: full date (YYYY-MM-DD)
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const [dateISO, setDateISO] = useState(todayISO);
+
     const [loadingProfile, setLoadingProfile] = useState(false);
     const [loadError, setLoadError] = useState(null);
+    const [geocoding, setGeocoding] = useState(false);
+    const [geoResults, setGeoResults] = useState([]);
 
     
 
@@ -22,12 +29,42 @@ const ProfileModal = ({ isOpen, onClose, profile, setProfile, weights, setWeight
         setWeights({ ...weights, [e.target.name]: parseFloat(e.target.value) });
     };
 
+    const handleGeocode = async () => {
+        if (!locationQuery) return;
+        setGeocoding(true);
+        setLoadError(null);
+        try {
+            // Use Nominatim public API for free geocoding
+            const q = encodeURIComponent(locationQuery);
+            const url = `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=5`;
+            const resp = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+            if (!resp.ok) throw new Error('Geocoding failed');
+            const data = await resp.json();
+            setGeoResults(data || []);
+        } catch (e) {
+            setLoadError(e.message || 'Failed to geocode location');
+        } finally {
+            setGeocoding(false);
+        }
+    };
+
+    const pickGeoResult = (item) => {
+        setResolvedLat(item.lat);
+        setResolvedLon(item.lon);
+        setGeoResults([]);
+        setLocationQuery(item.display_name || `${item.lat}, ${item.lon}`);
+    };
+
     const handleLoadFromDate = async () => {
         setLoadError(null);
         setLoadingProfile(true);
         try {
-            if (!lat || !lon) throw new Error('Please enter latitude and longitude before loading');
-            const res = await fetchProfileFromDate({ lat: parseFloat(lat), lon: parseFloat(lon), month, day });
+            if (!resolvedLat || !resolvedLon) throw new Error('Please search and pick a location before loading');
+            const d = new Date(dateISO);
+            if (isNaN(d)) throw new Error('Please select a valid date');
+            const month = d.getMonth() + 1;
+            const day = d.getDate();
+            const res = await fetchProfileFromDate({ lat: parseFloat(resolvedLat), lon: parseFloat(resolvedLon), month, day });
             if (res.error) throw new Error(res.error);
             if (res.profile) {
                 setProfile(res.profile);
@@ -50,16 +87,32 @@ const ProfileModal = ({ isOpen, onClose, profile, setProfile, weights, setWeight
                 <div className={styles.grid}>
                     <div style={{ gridColumn: '1 / -1', marginBottom: '0.5rem' }}>
                         <h4 className={styles.subtitle}>Load Profile From Location & Date</h4>
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                            <input placeholder="Lat" value={lat} onChange={(e) => setLat(e.target.value)} className={styles.smallInput} />
-                            <input placeholder="Lon" value={lon} onChange={(e) => setLon(e.target.value)} className={styles.smallInput} />
-                            <select value={month} onChange={(e) => setMonth(parseInt(e.target.value, 10))} className={styles.smallInput}>
-                                {Array.from({ length: 12 }).map((_, i) => <option key={i} value={i+1}>{i+1}</option>)}
-                            </select>
-                            <select value={day} onChange={(e) => setDay(parseInt(e.target.value, 10))} className={styles.smallInput}>
-                                {Array.from({ length: 31 }).map((_, i) => <option key={i} value={i+1}>{i+1}</option>)}
-                            </select>
-                            <button onClick={handleLoadFromDate} className={styles.btn} disabled={loadingProfile}>{loadingProfile ? 'Loading...' : 'Load from date'}</button>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexDirection: 'column' }}>
+                            <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
+                                <input placeholder="Search for a location (city, address)" value={locationQuery} onChange={(e) => setLocationQuery(e.target.value)} className={styles.smallInput} style={{ flex: 1 }} />
+                                <button onClick={handleGeocode} className={styles.btn} disabled={geocoding}>{geocoding ? 'Searching...' : 'Search'}</button>
+                            </div>
+                            {geoResults && geoResults.length > 0 && (
+                                <div style={{ maxHeight: 160, overflow: 'auto', width: '100%', border: '1px solid var(--muted)', borderRadius: 6, marginTop: '0.25rem' }}>
+                                    {geoResults.map(g => (
+                                        <div key={g.place_id} style={{ padding: '0.4rem', cursor: 'pointer' }} onClick={() => pickGeoResult(g)}>
+                                            <div style={{ fontSize: '0.9rem' }}>{g.display_name}</div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-medium)' }}>{parseFloat(g.lat).toFixed(4)}, {parseFloat(g.lon).toFixed(4)}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div style={{ display: 'flex', gap: '0.5rem', width: '100%', alignItems: 'center' }}>
+                                <input type="date" value={dateISO} max={todayISO} onChange={(e) => setDateISO(e.target.value)} className={styles.smallInput} />
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-medium)' }}>Selected coords: {resolvedLat ? `${parseFloat(resolvedLat).toFixed(6)}, ${parseFloat(resolvedLon).toFixed(6)}` : 'None'}</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-medium)', marginTop: '0.25rem' }}>
+                                        Note: Profiles are computed from NASA POWER climatology (multi-year monthly averages). The backend uses the month/day only — the year is ignored. Future dates are not allowed here.
+                                    </div>
+                                </div>
+                                <button onClick={handleLoadFromDate} className={styles.btn} disabled={loadingProfile}>{loadingProfile ? 'Loading...' : 'Load profile'}</button>
+                            </div>
                         </div>
                         {loadError && <div style={{ color: 'var(--error)', marginTop: '0.25rem' }}>{loadError}</div>}
                     </div>
@@ -112,8 +165,18 @@ const ProfileModal = ({ isOpen, onClose, profile, setProfile, weights, setWeight
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
-                    <button onClick={() => { setLat(''); setLon(''); setLoadError(null); }} className={styles.secondaryButton}>Clear</button>
-                    <button onClick={onClose} className={styles.closeButton}>Save and Close</button>
+                    <button onClick={() => { setLocationQuery(''); setResolvedLat(''); setResolvedLon(''); setLoadError(null); }} className={styles.secondaryButton}>Clear</button>
+                    <button onClick={() => {
+                        // If parent provided setSearchParams, update the main search form with chosen location/date
+                        if (setSearchParams && resolvedLat && resolvedLon) {
+                            const d = new Date(dateISO);
+                            const month = d.getMonth() + 1;
+                            const day = d.getDate();
+                            const year = d.getFullYear();
+                            setSearchParams({ ...searchParams, lat: resolvedLat, lon: resolvedLon, year, month, day });
+                        }
+                        onClose();
+                    }} className={styles.closeButton}>Save and Close</button>
                 </div>
             </div>
         </div>
