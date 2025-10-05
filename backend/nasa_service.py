@@ -156,3 +156,70 @@ async def get_climatological_analysis(lat: float, lon: float, month: int, day: i
     except Exception as e:
         return {"error": f"Failed to process data: {e}"}
 
+
+async def get_profile_from_climatology(lat: float, lon: float, month: int, day: int):
+    """
+    Fetches climatology for the given location and month, and returns a suggested
+    comfort profile (ranges/thresholds) and default weights based on the typical
+    conditions for that month.
+    """
+    params = {
+        "latitude": lat,
+        "longitude": lon,
+        "community": "RE",
+        "parameters": "T2M,T2M_MAX,T2M_MIN,WS10M,WS10M_MAX,RH2M,PRECTOTCORR,KT",
+        "format": "JSON",
+        "header": "false",
+        "api_key": NASA_API_KEY
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(POWER_CLIMATOLOGY_API_URL, params=params)
+            response.raise_for_status()
+            data = response.json()
+    except Exception as e:
+        return {"error": f"Failed to fetch climatology data: {e}"}
+
+    try:
+        month_key = datetime(2000, month, 1).strftime('%b').upper()
+        raw = data.get("properties", {}).get("parameter", {})
+
+        temp_avg = raw.get("T2M", {}).get(month_key, None)
+        temp_min = raw.get("T2M_MIN", {}).get(month_key, temp_avg if temp_avg is not None else None)
+        temp_max = raw.get("T2M_MAX", {}).get(month_key, temp_avg if temp_avg is not None else None)
+
+        wind_avg = raw.get("WS10M", {}).get(month_key, None)
+        wind_max = raw.get("WS10M_MAX", {}).get(month_key, wind_avg if wind_avg is not None else None)
+
+        humidity_avg = raw.get("RH2M", {}).get(month_key, None)
+
+        precip_avg = raw.get("PRECTOTCORR", {}).get(month_key, 0)
+        rain_probability = min(precip_avg * 15, 100)
+
+        # Build a reasonable suggested profile around climatology
+        if temp_avg is None:
+            return {"error": "Missing temperature climatology for this location/month"}
+
+        # Suggest a comfortable band +/- 4C around the monthly mean
+        suggested = {
+            "temp_min": int(round(temp_avg - 4)),
+            "temp_max": int(round(temp_avg + 4)),
+            "wind_max": int(round(wind_avg if wind_avg is not None else 10)),
+            "rain_chance_max": int(round(min(100, max(5, rain_probability)))),
+            "humidity_max": int(round(humidity_avg if humidity_avg is not None else 75)),
+        }
+
+        # Default weights: emphasize rain and temperature slightly
+        default_weights = {
+            "temperature": 1.5,
+            "wind": 1.0,
+            "rain": 2.0,
+            "humidity": 1.0,
+        }
+
+        return {"profile": suggested, "weights": default_weights, "location": data.get("header", {}).get("title", "Unknown Location")}
+
+    except Exception as e:
+        return {"error": f"Failed to construct profile: {e}"}
+

@@ -5,6 +5,7 @@ import asyncio
 
 # Import the function from your service file
 from nasa_service import get_climatological_analysis
+from nasa_service import get_profile_from_climatology
 from fastapi.middleware.cors import CORSMiddleware
 
 # --- 1. Define the Upgraded Data Models (The API Contract) ---
@@ -49,7 +50,7 @@ app = FastAPI()
 # Allow cross origin requests from the frontend dev server(s)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174"],
+    allow_origins=["http://localhost:5173", "http://localhost:5175"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -260,3 +261,26 @@ async def analyze_polygon(request: PolygonAnalysisRequest):
 @app.get("/")
 def read_root():
     return {"status": "AtmoSphere Backend v2 is running!"}
+
+
+class ProfileFromDateRequest(BaseModel):
+    lat: float
+    lon: float
+    month: int
+    day: int
+
+
+@app.post('/api/profile/from_date')
+async def profile_from_date(request: ProfileFromDateRequest):
+    """
+    Returns a suggested comfort profile (and default weights) computed from the
+    climatology at the requested lat/lon and month/day. Frontend can use this
+    to prefill user preferences based on historical norms.
+    """
+    try:
+        result = await get_profile_from_climatology(lat=request.lat, lon=request.lon, month=request.month, day=request.day)
+        if not result or 'error' in result:
+            raise Exception(result.get('error', 'Unknown error while computing profile'))
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

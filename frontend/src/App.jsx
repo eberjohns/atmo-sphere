@@ -131,6 +131,8 @@ export default function App() {
         setProfile={setProfile}
         weights={weights}
         setWeights={setWeights}
+        searchParams={searchParams}
+        setSearchParams={setSearchParams}
       />
 
       <footer className="footer" style={{ textAlign: 'center' }}>
